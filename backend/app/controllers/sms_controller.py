@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from app.services.sms_service import start_session, stop_session, restart_session
-from app.models.sms_model import get_sms_metrics
+from app.services.sse_service import sse_stream
+from fastapi.responses import StreamingResponse
 
 sms_router = APIRouter()
 
@@ -26,8 +27,8 @@ def restart_sms_session(session_name: str):
     raise HTTPException(status_code=400, detail="Failed to restart session")
 
 @sms_router.get("/metrics/{country}/{operator}")
-def get_sms_metrics_endpoint(country: str, operator: str):
-    metrics = get_sms_metrics(country, operator)
+async def get_sms_metrics_endpoint(country: str, operator: str):
+    metrics = StreamingResponse(sse_stream(country, operator), media_type="text/event-stream")
     if metrics:
         return metrics
     raise HTTPException(status_code=404, detail="Metrics not found")
